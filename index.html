@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dasai Mochi — Panel de Control</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --card: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #a78bfa;
+    --accent2: #f472b6;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 40px;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .header-logo {
+    font-size: 28px;
+    filter: drop-shadow(0 0 8px #a78bfa80);
+  }
+  .header-title h1 {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header-title p { font-size: 13px; color: var(--text2); }
+
+  /* Status bar */
+  .status-bar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    transition: background 0.3s;
+  }
+  .status-dot.online { background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.5; }
+  }
+
+  /* Login */
+  .login-wrap {
+    max-width: 400px;
+    margin: 60px auto;
+    padding: 0 24px;
+  }
+  .login-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+  }
+  .login-card h2 {
+    font-size: 20px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .login-card p {
+    color: var(--text2);
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .input-wrap {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .input-wrap input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+  }
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .error-msg {
+    color: var(--red);
+    font-size: 13px;
+    text-align: center;
+    margin-top: 12px;
+    display: none;
+  }
+
+  /* Dashboard */
+  .dashboard { max-width: 600px; margin: 0 auto; padding: 24px; display: none; }
+  .section-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 24px 0 12px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  .card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-row:last-child { margin-bottom: 0; }
+  .card-label { font-size: 14px; font-weight: 600; }
+  .card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* Toggle */
+  .toggle {
+    width: 44px; height: 24px;
+    background: var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    background: white;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: left 0.2s;
+  }
+  .toggle.on::after { left: 23px; }
+
+  /* Select */
+  select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    max-width: 200px;
+  }
+
+  /* Time picker */
+  .time-picker {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .time-picker input[type=number] {
+    width: 56px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+  }
+  .time-sep { font-size: 18px; font-weight: 700; color: var(--text2); }
+
+  /* Days */
+  .days-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
+  .day-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .day-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* Anim selector */
+  .anim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .anim-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .anim-row label { font-size: 12px; color: var(--text2); }
+  .anim-row select { max-width: 110px; font-size: 11px; padding: 4px 8px; }
+
+  /* TZ search */
+  .tz-search {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .tz-search input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+  }
+
+  /* Save button */
+  .save-btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    margin-top: 24px;
+    transition: all 0.2s;
+  }
+  .save-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .save-btn:active { transform: translateY(0); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--green);
+    color: #000;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-weight: 700;
+    font-size: 14px;
+    transition: transform 0.3s;
+    z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Device info */
+  .device-info {
+    background: linear-gradient(135deg, #1e1e2e, #2a1a3e);
+    border: 1px solid #a78bfa30;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .device-icon { font-size: 32px; }
+  .device-detail { flex: 1; }
+  .device-detail h3 { font-size: 15px; font-weight: 700; }
+  .device-detail p { font-size: 12px; color: var(--text2); }
+  .device-time {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">🐾</div>
+  <div class="header-title">
+    <h1>Dasai Mochi</h1>
+    <p>Panel de control</p>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-dot" id="statusDot"></div>
+  <span id="statusText">Desconectado</span>
+</div>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <h2>🔐 Acceder</h2>
+    <p>Ingresa el ID y contraseña de tu Dasai Mochi</p>
+    <div class="field-label">ID del Mochi (MAC sin :)</div>
+    <div class="input-wrap">
+      <input type="text" id="inputDeviceId" placeholder="Ej: E072A1EAC754" maxlength="12">
+    </div>
+    <div class="field-label">Contraseña</div>
+    <div class="input-wrap">
+      <input type="password" id="inputPass" placeholder="mochiXXXXXX">
+    </div>
+    <button class="btn" onclick="doLogin()">Conectar</button>
+    <div class="error-msg" id="loginError">ID o contraseña incorrectos</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+
+  <div class="device-info">
+    <div class="device-icon">🐾</div>
+    <div class="device-detail">
+      <h3>Mi Dasai Mochi</h3>
+      <p id="deviceIdLabel">ID: —</p>
+    </div>
+    <div class="device-time" id="deviceTime">--:--</div>
+  </div>
+
+  <div class="section-title">Reloj</div>
+  <div class="card">
+    <div class="card-row">
+      <div>
+        <div class="card-label">Formato 24 horas</div>
+        <div class="card-sub">Activa para mostrar 00-23</div>
+      </div>
+      <div class="toggle" id="toggle24h" onclick="toggleSwitch(this,'use24h')"></div>
+    </div>
+    <div class="card-row">
+      <div>
+        <div class="card-label">Zona horaria</div>
+        <div class="card-sub">Selecciona tu región</div>
+      </div>
+    </div>
+    <div class="tz-search">
+      <input type="text" id="tzSearch" placeholder="🔍 Buscar país o ciudad..." oninput="filterTZ(this.value)">
+    </div>
+    <select id="tzSelect" size="4" style="width:100%;max-width:100%;height:auto;" onchange="state.tz=parseFloat(this.value)"></select>
+  </div>
+
+  <div class="section-title">Alarma</div>
+  <div class="card">
+    <div class="card-row">
+      <div>
+        <div class="card-label">Alarma activada</div>
+      </div>
+      <div class="toggle" id="toggleAlarm" onclick="toggleSwitch(this,'alarmEn')"></div>
+    </div>
+    <div class="card-row">
+      <div class="card-label">Hora</div>
+      <div class="time-picker">
+        <input type="number" id="alarmH" min="0" max="23" value="7" onchange="state.alarmH=parseInt(this.value)">
+        <span class="time-sep">:</span>
+        <input type="number" id="alarmM" min="0" max="59" value="0" onchange="state.alarmM=parseInt(this.value)">
+      </div>
+    </div>
+    <div class="card-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+      <div class="card-label">Días</div>
+      <div class="days-wrap" id="daysWrap">
+        <button class="day-btn" data-bit="0" onclick="toggleDay(this)">D</button>
+        <button class="day-btn active" data-bit="1" onclick="toggleDay(this)">L</button>
+        <button class="day-btn active" data-bit="2" onclick="toggleDay(this)">M</button>
+        <button class="day-btn active" data-bit="3" onclick="toggleDay(this)">X</button>
+        <button class="day-btn active" data-bit="4" onclick="toggleDay(this)">J</button>
+        <button class="day-btn active" data-bit="5" onclick="toggleDay(this)">V</button>
+        <button class="day-btn" data-bit="6" onclick="toggleDay(this)">S</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Animaciones por hora</div>
+  <div class="card">
+    <div class="card-sub" style="margin-bottom:12px;">Elige qué animación mostrar en cada franja horaria</div>
+    <div class="anim-grid" id="animGrid"></div>
+  </div>
+
+  <button class="save-btn" onclick="saveConfig()">💾 Guardar cambios</button>
+  <button class="save-btn" style="margin-top:8px;background:linear-gradient(135deg,#374151,#1f2937);font-size:13px;padding:10px;" onclick="doLogout()">Cerrar sesión</button>
+</div>
+
+<div class="toast" id="toast">✓ Cambios guardados</div>
+
+<script>
+// ── Datos ────────────────────────────────────────────────────
+const MQTT_HOST = '512b0b58cfc548398f97951eeb91530e.s1.eu.hivemq.cloud';
+const MQTT_WS_PORT = 8884;
+const MQTT_USER = 'dasai';
+const MQTT_PASS = 'Rf12ba#1';
+
+const ANIMS = ['Feliz','Sorprendido','Dormir','Enamorado','Triste','Enojado','Neutral'];
+const HOURS = ['00-05 (madrugada)','06-08 (mañana)','09-11 (media mañana)',
+               '12-13 (mediodía)','14-17 (tarde)','18-20 (noche)','21-23 (noche tarde)'];
+const TZ_DATA = [
+  {name:'Colombia / Ecuador / Perú', offset:-5},
+  {name:'México Centro', offset:-6},
+  {name:'México Pacífico', offset:-7},
+  {name:'Venezuela', offset:-4},
+  {name:'Argentina', offset:-3},
+  {name:'Brasil (Brasilia)', offset:-3},
+  {name:'Brasil (Manaos)', offset:-4},
+  {name:'Chile', offset:-4},
+  {name:'Bolivia', offset:-4},
+  {name:'Uruguay', offset:-3},
+  {name:'Paraguay', offset:-4},
+  {name:'Costa Rica', offset:-6},
+  {name:'Panamá', offset:-5},
+  {name:'Cuba', offset:-5},
+  {name:'Rep. Dominicana', offset:-4},
+  {name:'USA Este (New York)', offset:-5},
+  {name:'USA Centro (Chicago)', offset:-6},
+  {name:'USA Montaña (Denver)', offset:-7},
+  {name:'USA Pacífico (LA)', offset:-8},
+  {name:'USA Alaska', offset:-9},
+  {name:'Canadá Este', offset:-5},
+  {name:'Canadá Oeste', offset:-8},
+  {name:'España', offset:1},
+  {name:'Reino Unido', offset:0},
+  {name:'Francia / Alemania / Italia', offset:1},
+  {name:'Portugal', offset:0},
+  {name:'Rusia (Moscú)', offset:3},
+  {name:'Sudáfrica', offset:2},
+  {name:'Nigeria', offset:1},
+  {name:'Egipto', offset:2},
+  {name:'Kenia', offset:3},
+  {name:'Arabia Saudita', offset:3},
+  {name:'Emiratos Árabes', offset:4},
+  {name:'India', offset:5.5},
+  {name:'Bangladesh', offset:6},
+  {name:'Tailandia / Vietnam', offset:7},
+  {name:'China / Singapur', offset:8},
+  {name:'Corea del Sur', offset:9},
+  {name:'Japón', offset:9},
+  {name:'Australia (Sídney)', offset:11},
+  {name:'Nueva Zelanda', offset:13},
+];
+
+let state = {
+  tz:-5, use24h:false, alarmEn:false,
+  alarmH:7, alarmM:0, alarmDays:0b0111110,
+  hourAnims:[2,6,0,3,0,6,1]
+};
+let mqttClient = null;
+let deviceId = '';
+let devicePass = '';
+let connected = false;
+
+// ── Login ────────────────────────────────────────────────────
+function doLogin() {
+  const id = document.getElementById('inputDeviceId').value.toUpperCase().replace(/:/g,'');
+  const pass = document.getElementById('inputPass').value;
+  const expected = 'mochi' + id.slice(-6);
+
+  if (id.length !== 12 || pass !== expected) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+  deviceId = id;
+  devicePass = pass;
+  localStorage.setItem('dm_id', id);
+  localStorage.setItem('dm_pass', pass);
+  startDashboard();
+}
+
+function doLogout() {
+  localStorage.removeItem('dm_id');
+  localStorage.removeItem('dm_pass');
+  if (mqttClient) mqttClient.disconnect();
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('loginWrap').style.display = 'block';
+  setStatus(false);
+}
+
+// ── Dashboard ────────────────────────────────────────────────
+function startDashboard() {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('deviceIdLabel').textContent = 'ID: ' + deviceId;
+  buildAnimGrid();
+  buildTZSelect('');
+  connectMQTT();
+}
+
+function buildAnimGrid() {
+  const grid = document.getElementById('animGrid');
+  grid.innerHTML = '';
+  HOURS.forEach((h, i) => {
+    const row = document.createElement('div');
+    row.className = 'anim-row';
+    row.innerHTML = `<label>${h}</label>
+      <select onchange="state.hourAnims[${i}]=parseInt(this.value)" id="anim${i}">
+        ${ANIMS.map((a,j)=>`<option value="${j}">${a}</option>`).join('')}
+      </select>`;
+    grid.appendChild(row);
+  });
+}
+
+function buildTZSelect(q) {
+  const sel = document.getElementById('tzSelect');
+  const filt = TZ_DATA.filter(t => !q || t.name.toLowerCase().includes(q.toLowerCase()));
+  sel.innerHTML = filt.map(t => {
+    const sign = t.offset >= 0 ? '+' : '−';
+    const abs = Math.abs(t.offset);
+    const h = Math.floor(abs);
+    const m = (abs%1)*60;
+    const fmt = `GMT${sign}${h}${m?':'+m.toString().padStart(2,'0'):''}`;
+    return `<option value="${t.offset}" ${t.offset===state.tz?'selected':''}>${t.name} (${fmt})</option>`;
+  }).join('');
+}
+
+function filterTZ(q) { buildTZSelect(q); }
+
+function toggleSwitch(el, key) {
+  el.classList.toggle('on');
+  state[key] = el.classList.contains('on');
+}
+
+function toggleDay(btn) {
+  btn.classList.toggle('active');
+  const bit = parseInt(btn.dataset.bit);
+  if (btn.classList.contains('active')) state.alarmDays |= (1<<bit);
+  else state.alarmDays &= ~(1<<bit);
+}
+
+function applyStateToUI() {
+  // Toggle 24h
+  const t24 = document.getElementById('toggle24h');
+  if (state.use24h) t24.classList.add('on'); else t24.classList.remove('on');
+  // Toggle alarm
+  const ta = document.getElementById('toggleAlarm');
+  if (state.alarmEn) ta.classList.add('on'); else ta.classList.remove('on');
+  // Alarm time
+  document.getElementById('alarmH').value = state.alarmH;
+  document.getElementById('alarmM').value = state.alarmM;
+  // Days
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    const bit = parseInt(btn.dataset.bit);
+    if (state.alarmDays & (1<<bit)) btn.classList.add('active');
+    else btn.classList.remove('active');
+  });
+  // Anim selects
+  state.hourAnims.forEach((v,i) => {
+    const sel = document.getElementById('anim'+i);
+    if (sel) sel.value = v;
+  });
+  // TZ
+  buildTZSelect(document.getElementById('tzSearch').value);
+}
+
+// ── MQTT ─────────────────────────────────────────────────────
+function setStatus(online, text) {
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  if (online) { dot.classList.add('online'); txt.textContent = text || 'Mochi conectado'; }
+  else { dot.classList.remove('online'); txt.textContent = text || 'Mochi desconectado'; }
+  connected = online;
+}
+
+function connectMQTT() {
+  const clientId = 'web-' + Math.random().toString(36).substr(2,8);
+  mqttClient = new Paho.MQTT.Client(MQTT_HOST, MQTT_WS_PORT, '/mqtt', clientId);
+
+  mqttClient.onConnectionLost = () => {
+    setStatus(false);
+    setTimeout(connectMQTT, 5000);
+  };
+
+  mqttClient.onMessageArrived = (msg) => {
+    if (msg.destinationName === 'dasai/'+deviceId+'/status') {
+      try {
+        const data = JSON.parse(msg.payloadString);
+        if (data.use24h  !== undefined) state.use24h  = data.use24h;
+        if (data.alarmEn !== undefined) state.alarmEn = data.alarmEn;
+        if (data.alarmH  !== undefined) state.alarmH  = data.alarmH;
+        if (data.alarmM  !== undefined) state.alarmM  = data.alarmM;
+        if (data.alarmDays !== undefined) state.alarmDays = data.alarmDays;
+        if (data.tz      !== undefined) state.tz      = data.tz;
+        if (data.hour    !== undefined && data.min !== undefined) {
+          const h = data.hour, m = data.min;
+          const disp = state.use24h
+            ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
+            : `${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
+          document.getElementById('deviceTime').textContent = disp;
+        }
+        applyStateToUI();
+        setStatus(true, 'Mochi en línea');
+      } catch(e) {}
+    }
+  };
+
+  mqttClient.connect({
+    useSSL: true,
+    userName: MQTT_USER,
+    password: MQTT_PASS,
+    onSuccess: () => {
+      setStatus(false, 'Buscando Mochi...');
+      mqttClient.subscribe('dasai/'+deviceId+'/status');
+    },
+    onFailure: () => {
+      setStatus(false, 'Error de conexión');
+      setTimeout(connectMQTT, 5000);
+    }
+  });
+}
+
+function saveConfig() {
+  if (!mqttClient || !mqttClient.isConnected()) {
+    showToast('⚠️ Sin conexión al broker', '#f59e0b');
+    return;
+  }
+  const payload = {
+    tz:       state.tz,
+    use24h:   state.use24h,
+    alarmEn:  state.alarmEn,
+    alarmH:   parseInt(document.getElementById('alarmH').value),
+    alarmM:   parseInt(document.getElementById('alarmM').value),
+    alarmDays:state.alarmDays,
+    hourAnims:state.hourAnims.join(',')
+  };
+  const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+  msg.destinationName = 'dasai/'+deviceId+'/config';
+  msg.retained = true;
+  mqttClient.send(msg);
+  showToast('✓ Cambios enviados al Mochi');
+}
+
+function showToast(txt, color) {
+  const t = document.getElementById('toast');
+  t.textContent = txt;
+  t.style.background = color || 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Auto-login ───────────────────────────────────────────────
+window.onload = () => {
+  const id = localStorage.getItem('dm_id');
+  const pass = localStorage.getItem('dm_pass');
+  if (id && pass) {
+    document.getElementById('inputDeviceId').value = id;
+    document.getElementById('inputPass').value = pass;
+    deviceId = id; devicePass = pass;
+    startDashboard();
+  }
+};
+</script>
+</body>
+</html>
