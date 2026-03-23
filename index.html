@@ -2,704 +2,707 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dasai Mochi — Panel de Control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Dasai Mochi</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 <style>
-  :root {
-    --bg: #0f0f13;
-    --card: #1a1a24;
-    --border: #2a2a3a;
-    --accent: #a78bfa;
-    --accent2: #f472b6;
-    --green: #34d399;
-    --yellow: #fbbf24;
-    --red: #f87171;
-    --text: #f1f5f9;
-    --text2: #94a3b8;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    min-height: 100vh;
-    padding: 0 0 40px;
-  }
+:root {
+  --bg:       #08080f;
+  --surface:  #10101a;
+  --surface2: #18182a;
+  --border:   #252538;
+  --accent:   #a78bfa;
+  --accent2:  #f472b6;
+  --green:    #34d399;
+  --yellow:   #fbbf24;
+  --red:      #f87171;
+  --text:     #f1f0ff;
+  --text2:    #7c7c9e;
+  --r:        18px;
+  --rS:       12px;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  min-height:100vh;
+  padding-bottom:40px;
+}
 
-  /* Header */
-  .header {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .header-logo {
-    font-size: 28px;
-    filter: drop-shadow(0 0 8px #a78bfa80);
-  }
-  .header-title h1 {
-    font-size: 20px;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .header-title p { font-size: 13px; color: var(--text2); }
+/* ── Header ─────────────────────── */
+.header {
+  background:linear-gradient(135deg,#0d0d1a 0%,#14102a 100%);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;
+  display:flex;
+  align-items:center;
+  gap:0;
+  overflow:hidden;
+  height:72px;
+  position:relative;
+}
+.header-mochi {
+  image-rendering:pixelated;
+  height:64px;
+  width:auto;
+  opacity:0.95;
+  filter:drop-shadow(0 0 12px #a78bfa60);
+  animation:float 3s ease-in-out infinite;
+  flex-shrink:0;
+}
+@keyframes float {
+  0%,100% { transform:translateY(0); }
+  50% { transform:translateY(-4px); }
+}
+.header-info { flex:1; padding-left:12px; }
+.header-info h1 {
+  font-size:19px;
+  font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  letter-spacing:-0.3px;
+}
+.header-info p { font-size:12px; color:var(--text2); margin-top:2px; }
+.header-status {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:6px 12px;
+  font-size:12px;
+  font-weight:600;
+  color:var(--text2);
+  flex-shrink:0;
+}
+.dot {
+  width:7px; height:7px;
+  border-radius:50%;
+  background:var(--red);
+  transition:background 0.3s;
+}
+.dot.on { background:var(--green); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-  /* Status bar */
-  .status-bar {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    padding: 10px 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
-  }
-  .status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--red);
-    transition: background 0.3s;
-  }
-  .status-dot.online { background: var(--green); animation: pulse 2s infinite; }
-  @keyframes pulse {
-    0%,100% { opacity: 1; } 50% { opacity: 0.5; }
-  }
+/* ── Login ──────────────────────── */
+.login-wrap {
+  max-width:420px;
+  margin:0 auto;
+  padding:32px 20px;
+}
+.mochi-hero {
+  text-align:center;
+  margin-bottom:28px;
+}
+.mochi-hero img {
+  image-rendering:pixelated;
+  width:192px;
+  height:auto;
+  animation:float 3s ease-in-out infinite;
+  filter:drop-shadow(0 0 24px #a78bfa50);
+}
+.mochi-hero h2 {
+  font-size:22px;
+  font-weight:800;
+  margin-top:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.mochi-hero p { font-size:13px; color:var(--text2); margin-top:4px; }
 
-  /* Login */
-  .login-wrap {
-    max-width: 400px;
-    margin: 60px auto;
-    padding: 0 24px;
-  }
-  .login-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px;
-  }
-  .login-card h2 {
-    font-size: 20px;
-    margin-bottom: 8px;
-    text-align: center;
-  }
-  .login-card p {
-    color: var(--text2);
-    font-size: 13px;
-    text-align: center;
-    margin-bottom: 24px;
-  }
-  .field-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text2);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-  }
-  .input-wrap {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 16px;
-  }
-  .input-wrap input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    padding: 12px 16px;
-    color: var(--text);
-    font-size: 14px;
-    outline: none;
-  }
-  .btn {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-    transition: opacity 0.2s;
-  }
-  .btn:hover { opacity: 0.9; }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .error-msg {
-    color: var(--red);
-    font-size: 13px;
-    text-align: center;
-    margin-top: 12px;
-    display: none;
-  }
+.card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:20px;
+  margin-bottom:12px;
+}
+.field-label {
+  font-size:11px;
+  font-weight:700;
+  color:var(--text2);
+  text-transform:uppercase;
+  letter-spacing:1.2px;
+  margin-bottom:8px;
+}
+.input-wrap {
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:var(--rS);
+  margin-bottom:14px;
+  transition:border-color 0.2s;
+}
+.input-wrap:focus-within { border-color:var(--accent); }
+.input-wrap input {
+  width:100%;
+  background:transparent;
+  border:none;
+  padding:13px 16px;
+  color:var(--text);
+  font-size:15px;
+  outline:none;
+}
+.btn-primary {
+  width:100%;
+  padding:15px;
+  border:none;
+  border-radius:var(--rS);
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:white;
+  letter-spacing:0.3px;
+  transition:opacity 0.2s, transform 0.1s;
+}
+.btn-primary:active { transform:scale(0.98); opacity:0.9; }
+.err {
+  color:var(--red);
+  font-size:13px;
+  text-align:center;
+  margin-top:10px;
+  display:none;
+}
 
-  /* Dashboard */
-  .dashboard { max-width: 600px; margin: 0 auto; padding: 24px; display: none; }
-  .section-title {
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--text2);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin: 24px 0 12px;
-  }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 12px;
-  }
-  .card-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .card-row:last-child { margin-bottom: 0; }
-  .card-label { font-size: 14px; font-weight: 600; }
-  .card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+/* ── Dashboard ──────────────────── */
+.dash { max-width:480px; margin:0 auto; padding:20px; display:none; }
 
-  /* Toggle */
-  .toggle {
-    width: 44px; height: 24px;
-    background: var(--border);
-    border-radius: 12px;
-    cursor: pointer;
-    position: relative;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-  .toggle.on { background: var(--accent); }
-  .toggle::after {
-    content: '';
-    position: absolute;
-    width: 18px; height: 18px;
-    background: white;
-    border-radius: 50%;
-    top: 3px; left: 3px;
-    transition: left 0.2s;
-  }
-  .toggle.on::after { left: 23px; }
+.device-banner {
+  background:linear-gradient(135deg,#14102a,#1a1030);
+  border:1px solid #a78bfa25;
+  border-radius:var(--r);
+  padding:16px 20px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:20px;
+}
+.device-banner img {
+  image-rendering:pixelated;
+  height:48px;
+  width:auto;
+  filter:drop-shadow(0 0 8px #a78bfa50);
+}
+.device-banner-info { flex:1; }
+.device-banner-info h3 { font-size:15px; font-weight:700; }
+.device-banner-info p { font-size:12px; color:var(--text2); margin-top:2px; }
+.device-time {
+  font-size:24px;
+  font-weight:800;
+  color:var(--accent);
+  font-variant-numeric:tabular-nums;
+  flex-shrink:0;
+}
 
-  /* Select */
-  select {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-    outline: none;
-    max-width: 200px;
-  }
+.section-title {
+  font-size:10px;
+  font-weight:800;
+  color:var(--text2);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin:20px 0 10px;
+}
 
-  /* Time picker */
-  .time-picker {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .time-picker input[type=number] {
-    width: 56px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 8px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 700;
-    text-align: center;
-    outline: none;
-  }
-  .time-sep { font-size: 18px; font-weight: 700; color: var(--text2); }
+.card-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 0;
+  border-bottom:1px solid var(--border);
+}
+.card-row:last-child { border-bottom:none; padding-bottom:0; }
+.card-row:first-child { padding-top:0; }
+.row-label { font-size:14px; font-weight:600; }
+.row-sub { font-size:12px; color:var(--text2); margin-top:2px; }
 
-  /* Days */
-  .days-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
-  .day-btn {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text2);
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .day-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-  }
+/* Toggle */
+.toggle {
+  width:46px; height:26px;
+  background:var(--border);
+  border-radius:13px;
+  cursor:pointer;
+  position:relative;
+  transition:background 0.2s;
+  flex-shrink:0;
+}
+.toggle.on { background:var(--accent); }
+.toggle::after {
+  content:'';
+  position:absolute;
+  width:20px; height:20px;
+  background:white;
+  border-radius:50%;
+  top:3px; left:3px;
+  transition:left 0.2s;
+  box-shadow:0 1px 3px #0004;
+}
+.toggle.on::after { left:23px; }
 
-  /* Anim selector */
-  .anim-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .anim-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--bg);
-    border-radius: 10px;
-    padding: 10px 12px;
-  }
-  .anim-row label { font-size: 12px; color: var(--text2); }
-  .anim-row select { max-width: 110px; font-size: 11px; padding: 4px 8px; }
+/* Select */
+select {
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:9px 12px;
+  border-radius:var(--rS);
+  font-size:13px;
+  cursor:pointer;
+  outline:none;
+  -webkit-appearance:none;
+  max-width:180px;
+}
 
-  /* TZ search */
-  .tz-search {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 8px;
-  }
-  .tz-search input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    padding: 10px 14px;
-    color: var(--text);
-    font-size: 13px;
-    outline: none;
-  }
+/* TZ */
+.tz-search {
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:var(--rS);
+  margin-bottom:8px;
+  transition:border-color 0.2s;
+}
+.tz-search:focus-within { border-color:var(--accent); }
+.tz-search input {
+  width:100%;
+  background:transparent;
+  border:none;
+  padding:11px 14px;
+  color:var(--text);
+  font-size:13px;
+  outline:none;
+}
+.tz-select {
+  background:var(--bg);
+  border:1px solid var(--border);
+  color:var(--text);
+  width:100%;
+  max-width:100%;
+  border-radius:var(--rS);
+  padding:4px;
+  font-size:13px;
+  outline:none;
+  height:110px;
+}
 
-  /* Save button */
-  .save-btn {
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-    margin-top: 24px;
-    transition: all 0.2s;
-  }
-  .save-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-  .save-btn:active { transform: translateY(0); }
+/* Time picker */
+.time-picker {
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.time-picker input {
+  width:54px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:9px 6px;
+  border-radius:var(--rS);
+  font-size:18px;
+  font-weight:700;
+  text-align:center;
+  outline:none;
+  -moz-appearance:textfield;
+}
+.time-picker input::-webkit-outer-spin-button,
+.time-picker input::-webkit-inner-spin-button { -webkit-appearance:none; }
+.time-sep { font-size:20px; font-weight:800; color:var(--text2); }
 
-  /* Toast */
-  .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: var(--green);
-    color: #000;
-    padding: 12px 24px;
-    border-radius: 24px;
-    font-weight: 700;
-    font-size: 14px;
-    transition: transform 0.3s;
-    z-index: 999;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); }
+/* Days */
+.days-wrap { display:flex; gap:7px; flex-wrap:wrap; }
+.day-btn {
+  width:38px; height:38px;
+  border-radius:50%;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text2);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  transition:all 0.15s;
+}
+.day-btn.on {
+  background:var(--accent);
+  border-color:var(--accent);
+  color:white;
+}
 
-  /* Device info */
-  .device-info {
-    background: linear-gradient(135deg, #1e1e2e, #2a1a3e);
-    border: 1px solid #a78bfa30;
-    border-radius: 14px;
-    padding: 16px 20px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .device-icon { font-size: 32px; }
-  .device-detail { flex: 1; }
-  .device-detail h3 { font-size: 15px; font-weight: 700; }
-  .device-detail p { font-size: 12px; color: var(--text2); }
-  .device-time {
-    font-size: 22px;
-    font-weight: 800;
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-  }
+/* Anim grid */
+.anim-item {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:var(--surface2);
+  border-radius:var(--rS);
+  padding:10px 12px;
+  margin-bottom:8px;
+}
+.anim-item:last-child { margin-bottom:0; }
+.anim-label { font-size:12px; color:var(--text2); font-weight:600; }
+.anim-item select { max-width:130px; font-size:12px; }
+
+/* Save */
+.btn-save {
+  width:100%;
+  padding:16px;
+  border:none;
+  border-radius:var(--rS);
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:white;
+  margin-top:20px;
+  transition:opacity 0.2s, transform 0.1s;
+  letter-spacing:0.3px;
+}
+.btn-save:active { transform:scale(0.98); opacity:0.9; }
+
+.btn-logout {
+  width:100%;
+  padding:13px;
+  border:1px solid var(--border);
+  border-radius:var(--rS);
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  background:transparent;
+  color:var(--text2);
+  margin-top:8px;
+}
+
+/* Toast */
+.toast {
+  position:fixed;
+  bottom:24px; left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--surface);
+  border:1px solid var(--green);
+  color:var(--green);
+  padding:12px 24px;
+  border-radius:24px;
+  font-weight:700;
+  font-size:14px;
+  transition:transform 0.3s;
+  z-index:999;
+  white-space:nowrap;
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.warn { border-color:var(--yellow); color:var(--yellow); }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-logo">🐾</div>
-  <div class="header-title">
+  <img class="header-mochi" src="data:image/png;base64,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" alt="Mochi">
+  <div class="header-info">
     <h1>Dasai Mochi</h1>
     <p>Panel de control</p>
   </div>
-</div>
-
-<div class="status-bar">
-  <div class="status-dot" id="statusDot"></div>
-  <span id="statusText">Desconectado</span>
+  <div class="header-status">
+    <div class="dot" id="dot"></div>
+    <span id="statusTxt">Offline</span>
+  </div>
 </div>
 
 <!-- LOGIN -->
 <div class="login-wrap" id="loginWrap">
-  <div class="login-card">
-    <h2>🔐 Acceder</h2>
-    <p>Ingresa el ID y contraseña de tu Dasai Mochi</p>
-    <div class="field-label">ID del Mochi (MAC sin :)</div>
+  <div class="mochi-hero">
+    <img src="data:image/png;base64,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AIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAAAAAAAIACAgAAAAAAAAAAKCAAAAAA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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/t8eHBIAAAAACPr/2hFWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAApgBxaFkId4/m9gAAAABJRU5ErkJggg==" alt="Dasai Mochi">
+    <h2>Dasai Mochi</h2>
+    <p>Ingresa para configurar tu dispositivo</p>
+  </div>
+  <div class="card">
+    <div class="field-label">ID del Mochi</div>
     <div class="input-wrap">
-      <input type="text" id="inputDeviceId" placeholder="Ej: E072A1EAC754" maxlength="12">
+      <input type="text" id="inId" placeholder="Ej: E072A1EAC754" maxlength="12" autocomplete="off" autocapitalize="characters">
     </div>
     <div class="field-label">Contraseña</div>
     <div class="input-wrap">
-      <input type="password" id="inputPass" placeholder="mochiXXXXXX">
+      <input type="password" id="inPass" placeholder="mochiXXXXXX">
     </div>
-    <button class="btn" onclick="doLogin()">Conectar</button>
-    <div class="error-msg" id="loginError">ID o contraseña incorrectos</div>
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <div class="err" id="errMsg">ID o contraseña incorrectos</div>
   </div>
 </div>
 
 <!-- DASHBOARD -->
-<div class="dashboard" id="dashboard">
+<div class="dash" id="dash">
 
-  <div class="device-info">
-    <div class="device-icon">🐾</div>
-    <div class="device-detail">
+  <div class="device-banner">
+    <img src="data:image/png;base64,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" alt="Mochi">
+    <div class="device-banner-info">
       <h3>Mi Dasai Mochi</h3>
-      <p id="deviceIdLabel">ID: —</p>
+      <p id="devIdLabel">Cargando...</p>
     </div>
-    <div class="device-time" id="deviceTime">--:--</div>
+    <div class="device-time" id="devTime">--:--</div>
   </div>
 
+  <!-- Reloj -->
   <div class="section-title">Reloj</div>
   <div class="card">
     <div class="card-row">
       <div>
-        <div class="card-label">Formato 24 horas</div>
-        <div class="card-sub">Activa para mostrar 00-23</div>
+        <div class="row-label">Formato 24 horas</div>
+        <div class="row-sub">Muestra de 00:00 a 23:59</div>
       </div>
-      <div class="toggle" id="toggle24h" onclick="toggleSwitch(this,'use24h')"></div>
+      <div class="toggle" id="tog24" onclick="togSwitch(this,'use24h');updatePreview();markChanged()"></div>
     </div>
-    <div class="card-row">
-      <div>
-        <div class="card-label">Zona horaria</div>
-        <div class="card-sub">Selecciona tu región</div>
+    <div class="card-row" style="justify-content:center;">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--rS);padding:10px 24px;text-align:center;">
+        <div style="font-size:10px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Vista previa</div>
+        <div id="timePreview" style="font-size:28px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:2px;">--:--</div>
       </div>
     </div>
-    <div class="tz-search">
-      <input type="text" id="tzSearch" placeholder="🔍 Buscar país o ciudad..." oninput="filterTZ(this.value)">
+    <div class="card-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+      <div class="row-label">Zona horaria</div>
+      <div class="tz-search">
+        <input type="text" placeholder="🔍 Buscar país o ciudad..." oninput="filterTZ(this.value)">
+      </div>
+      <select class="tz-select" id="tzSel" size="5" onchange="st.tz=parseFloat(this.value);markChanged()"></select>
     </div>
-    <select id="tzSelect" size="4" style="width:100%;max-width:100%;height:auto;" onchange="state.tz=parseFloat(this.value)"></select>
   </div>
 
+  <!-- Alarma -->
   <div class="section-title">Alarma</div>
   <div class="card">
     <div class="card-row">
       <div>
-        <div class="card-label">Alarma activada</div>
+        <div class="row-label">Activar alarma</div>
       </div>
-      <div class="toggle" id="toggleAlarm" onclick="toggleSwitch(this,'alarmEn')"></div>
+      <div class="toggle" id="togAlarm" onclick="togSwitch(this,'alarmEn');markChanged()"></div>
     </div>
     <div class="card-row">
-      <div class="card-label">Hora</div>
+      <div class="row-label">Hora</div>
       <div class="time-picker">
-        <input type="number" id="alarmH" min="0" max="23" value="7" onchange="state.alarmH=parseInt(this.value)">
+        <input type="number" id="aH" min="0" max="23" value="7" onchange="st.alarmH=+this.value;markChanged()">
         <span class="time-sep">:</span>
-        <input type="number" id="alarmM" min="0" max="59" value="0" onchange="state.alarmM=parseInt(this.value)">
+        <input type="number" id="aM" min="0" max="59" value="0" onchange="st.alarmM=+this.value;markChanged()">
       </div>
     </div>
     <div class="card-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
-      <div class="card-label">Días</div>
-      <div class="days-wrap" id="daysWrap">
-        <button class="day-btn" data-bit="0" onclick="toggleDay(this)">D</button>
-        <button class="day-btn active" data-bit="1" onclick="toggleDay(this)">L</button>
-        <button class="day-btn active" data-bit="2" onclick="toggleDay(this)">M</button>
-        <button class="day-btn active" data-bit="3" onclick="toggleDay(this)">X</button>
-        <button class="day-btn active" data-bit="4" onclick="toggleDay(this)">J</button>
-        <button class="day-btn active" data-bit="5" onclick="toggleDay(this)">V</button>
-        <button class="day-btn" data-bit="6" onclick="toggleDay(this)">S</button>
+      <div class="row-label">Días</div>
+      <div class="days-wrap">
+        <button class="day-btn" data-b="0" onclick="togDay(this)">D</button>
+        <button class="day-btn on" data-b="1" onclick="togDay(this)">L</button>
+        <button class="day-btn on" data-b="2" onclick="togDay(this)">M</button>
+        <button class="day-btn on" data-b="3" onclick="togDay(this)">X</button>
+        <button class="day-btn on" data-b="4" onclick="togDay(this)">J</button>
+        <button class="day-btn on" data-b="5" onclick="togDay(this)">V</button>
+        <button class="day-btn" data-b="6" onclick="togDay(this)">S</button>
       </div>
     </div>
   </div>
 
+  <!-- Animaciones -->
   <div class="section-title">Animaciones por hora</div>
-  <div class="card">
-    <div class="card-sub" style="margin-bottom:12px;">Elige qué animación mostrar en cada franja horaria</div>
-    <div class="anim-grid" id="animGrid"></div>
-  </div>
+  <div class="card" id="animCard"></div>
 
-  <button class="save-btn" onclick="saveConfig()">💾 Guardar cambios</button>
-  <button class="save-btn" style="margin-top:8px;background:linear-gradient(135deg,#374151,#1f2937);font-size:13px;padding:10px;" onclick="doLogout()">Cerrar sesión</button>
+  <button class="btn-save" onclick="saveConfig()">💾 Guardar cambios</button>
+  <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
 </div>
 
-<div class="toast" id="toast">✓ Cambios guardados</div>
+<div class="toast" id="toast"></div>
 
 <script>
-// ── Datos ────────────────────────────────────────────────────
 const MQTT_HOST = '512b0b58cfc548398f97951eeb91530e.s1.eu.hivemq.cloud';
-const MQTT_WS_PORT = 8884;
+const MQTT_PORT = 8884;
 const MQTT_USER = 'dasai';
 const MQTT_PASS = 'Rf12ba#1';
 
 const ANIMS = ['Feliz','Sorprendido','Dormir','Enamorado','Triste','Enojado','Neutral'];
-const HOURS = ['00-05 (madrugada)','06-08 (mañana)','09-11 (media mañana)',
-               '12-13 (mediodía)','14-17 (tarde)','18-20 (noche)','21-23 (noche tarde)'];
-const TZ_DATA = [
-  {name:'Colombia / Ecuador / Perú', offset:-5},
-  {name:'México Centro', offset:-6},
-  {name:'México Pacífico', offset:-7},
-  {name:'Venezuela', offset:-4},
-  {name:'Argentina', offset:-3},
-  {name:'Brasil (Brasilia)', offset:-3},
-  {name:'Brasil (Manaos)', offset:-4},
-  {name:'Chile', offset:-4},
-  {name:'Bolivia', offset:-4},
-  {name:'Uruguay', offset:-3},
-  {name:'Paraguay', offset:-4},
-  {name:'Costa Rica', offset:-6},
-  {name:'Panamá', offset:-5},
-  {name:'Cuba', offset:-5},
-  {name:'Rep. Dominicana', offset:-4},
-  {name:'USA Este (New York)', offset:-5},
-  {name:'USA Centro (Chicago)', offset:-6},
-  {name:'USA Montaña (Denver)', offset:-7},
-  {name:'USA Pacífico (LA)', offset:-8},
-  {name:'USA Alaska', offset:-9},
-  {name:'Canadá Este', offset:-5},
-  {name:'Canadá Oeste', offset:-8},
-  {name:'España', offset:1},
-  {name:'Reino Unido', offset:0},
-  {name:'Francia / Alemania / Italia', offset:1},
-  {name:'Portugal', offset:0},
-  {name:'Rusia (Moscú)', offset:3},
-  {name:'Sudáfrica', offset:2},
-  {name:'Nigeria', offset:1},
-  {name:'Egipto', offset:2},
-  {name:'Kenia', offset:3},
-  {name:'Arabia Saudita', offset:3},
-  {name:'Emiratos Árabes', offset:4},
-  {name:'India', offset:5.5},
-  {name:'Bangladesh', offset:6},
-  {name:'Tailandia / Vietnam', offset:7},
-  {name:'China / Singapur', offset:8},
-  {name:'Corea del Sur', offset:9},
-  {name:'Japón', offset:9},
-  {name:'Australia (Sídney)', offset:11},
-  {name:'Nueva Zelanda', offset:13},
+const HOURS = [
+  '00-05 Madrugada','06-08 Mañana','09-11 Media mañana',
+  '12-13 Mediodía','14-17 Tarde','18-20 Noche','21-23 Noche tarde'
+];
+const TZ = [
+  {n:'Colombia / Ecuador / Perú',o:-5},{n:'México Centro',o:-6},{n:'México Pacífico',o:-7},
+  {n:'Venezuela',o:-4},{n:'Argentina',o:-3},{n:'Brasil (Brasilia)',o:-3},
+  {n:'Brasil (Manaos)',o:-4},{n:'Chile',o:-4},{n:'Bolivia',o:-4},
+  {n:'Uruguay',o:-3},{n:'Paraguay',o:-4},{n:'Costa Rica',o:-6},
+  {n:'Panamá',o:-5},{n:'Cuba',o:-5},{n:'Rep. Dominicana',o:-4},
+  {n:'USA Este',o:-5},{n:'USA Centro',o:-6},{n:'USA Montaña',o:-7},
+  {n:'USA Pacífico',o:-8},{n:'USA Alaska',o:-9},
+  {n:'Canadá Este',o:-5},{n:'Canadá Oeste',o:-8},
+  {n:'España',o:1},{n:'Reino Unido',o:0},{n:'Francia/Alemania/Italia',o:1},
+  {n:'Portugal',o:0},{n:'Rusia (Moscú)',o:3},
+  {n:'Sudáfrica',o:2},{n:'Nigeria',o:1},{n:'Egipto',o:2},{n:'Kenia',o:3},
+  {n:'Arabia Saudita',o:3},{n:'Emiratos Árabes',o:4},
+  {n:'India',o:5.5},{n:'Bangladesh',o:6},{n:'Tailandia/Vietnam',o:7},
+  {n:'China/Singapur',o:8},{n:'Corea del Sur',o:9},{n:'Japón',o:9},
+  {n:'Australia (Sídney)',o:11},{n:'Nueva Zelanda',o:13},
 ];
 
-let state = {
-  tz:-5, use24h:false, alarmEn:false,
-  alarmH:7, alarmM:0, alarmDays:0b0111110,
-  hourAnims:[2,6,0,3,0,6,1]
-};
-let mqttClient = null;
-let deviceId = '';
-let devicePass = '';
-let connected = false;
+let st = {tz:-5,use24h:false,alarmEn:false,alarmH:7,alarmM:0,alarmDays:0b0111110,hourAnims:[2,6,0,3,0,6,1]};
+let mqtt=null, devId='', connected=false;
 
-// ── Login ────────────────────────────────────────────────────
-function doLogin() {
-  const id = document.getElementById('inputDeviceId').value.toUpperCase().replace(/:/g,'');
-  const pass = document.getElementById('inputPass').value;
-  const expected = 'mochi' + id.slice(-6);
-
-  if (id.length !== 12 || pass !== expected) {
-    document.getElementById('loginError').style.display = 'block';
-    return;
-  }
-  deviceId = id;
-  devicePass = pass;
-  localStorage.setItem('dm_id', id);
-  localStorage.setItem('dm_pass', pass);
-  startDashboard();
+function fmtOff(o) {
+  const s=o>=0?'+':'−', a=Math.abs(o), h=Math.floor(a), m=(a%1)*60;
+  return `GMT${s}${h}${m?':'+String(m).padStart(2,'0'):''}`;
 }
 
-function doLogout() {
-  localStorage.removeItem('dm_id');
-  localStorage.removeItem('dm_pass');
-  if (mqttClient) mqttClient.disconnect();
-  document.getElementById('dashboard').style.display = 'none';
-  document.getElementById('loginWrap').style.display = 'block';
+function buildTZ(q='') {
+  const sel=document.getElementById('tzSel');
+  const f=TZ.filter(t=>!q||t.n.toLowerCase().includes(q.toLowerCase()));
+  sel.innerHTML=f.map(t=>`<option value="${t.o}" ${t.o===st.tz?'selected':''}>${t.n} (${fmtOff(t.o)})</option>`).join('');
+}
+function filterTZ(q){buildTZ(q);}
+
+function buildAnimGrid() {
+  const c=document.getElementById('animCard');
+  c.innerHTML=HOURS.map((h,i)=>`
+    <div class="anim-item">
+      <span class="anim-label">${h}</span>
+      <select id="a${i}" onchange="st.hourAnims[${i}]=+this.value">
+        ${ANIMS.map((a,j)=>`<option value="${j}" ${j===st.hourAnims[i]?'selected':''}>${a}</option>`).join('')}
+      </select>
+    </div>`).join('');
+}
+
+function togSwitch(el,k){el.classList.toggle('on');st[k]=el.classList.contains('on');markChanged();}
+function togDay(btn){
+  btn.classList.toggle('on');
+  const b=+btn.dataset.b;
+  if(btn.classList.contains('on')) st.alarmDays|=(1<<b);
+  else st.alarmDays&=~(1<<b);
+}
+
+function updatePreview() {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const el = document.getElementById('timePreview');
+  if (!el) return;
+  if (st.use24h) {
+    el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  } else {
+    const h12 = h % 12 || 12;
+    el.textContent = h12 + ':' + String(m).padStart(2,'0') + (h >= 12 ? ' PM' : ' AM');
+  }
+}
+setInterval(updatePreview, 30000);
+
+function applyUI() {
+  document.getElementById('tog24').classList.toggle('on',st.use24h);
+  document.getElementById('togAlarm').classList.toggle('on',st.alarmEn);
+  document.getElementById('aH').value=st.alarmH;
+  document.getElementById('aM').value=st.alarmM;
+  document.querySelectorAll('.day-btn').forEach(b=>{
+    b.classList.toggle('on',!!(st.alarmDays&(1<<+b.dataset.b)));
+  });
+  HOURS.forEach((_,i)=>{const s=document.getElementById('a'+i);if(s)s.value=st.hourAnims[i];});
+  buildTZ();
+  updatePreview();
+}
+
+function setStatus(on,txt){
+  document.getElementById('dot').classList.toggle('on',on);
+  document.getElementById('statusTxt').textContent=txt||(on?'Online':'Offline');
+  connected=on;
+}
+
+function connectMQTT(){
+  const cid='web-'+Math.random().toString(36).substr(2,8);
+  mqtt=new Paho.MQTT.Client(MQTT_HOST,MQTT_PORT,'/mqtt',cid);
+  mqtt.onConnectionLost=()=>{setStatus(false);setTimeout(connectMQTT,5000);};
+  mqtt.onMessageArrived=(msg)=>{
+    if(msg.destinationName==='dasai/'+devId+'/status'){
+      try{
+        const d=JSON.parse(msg.payloadString);
+        if(d.use24h!==undefined)st.use24h=d.use24h;
+        if(d.alarmEn!==undefined)st.alarmEn=d.alarmEn;
+        if(d.alarmH!==undefined)st.alarmH=d.alarmH;
+        if(d.alarmM!==undefined)st.alarmM=d.alarmM;
+        if(d.alarmDays!==undefined)st.alarmDays=d.alarmDays;
+        if(d.tz!==undefined)st.tz=d.tz;
+        if(d.hour!==undefined&&d.min!==undefined){
+          const h=d.hour,m=d.min;
+          document.getElementById('devTime').textContent=
+            st.use24h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
+            :`${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
+        }
+        applyUI();
+        setStatus(true,'Mochi en línea ✓');
+      }catch(e){}
+    }
+  };
+  mqtt.connect({
+    useSSL:true, userName:MQTT_USER, password:MQTT_PASS,
+    onSuccess:()=>{
+      setStatus(false,'Buscando Mochi...');
+      mqtt.subscribe('dasai/'+devId+'/status');
+    },
+    onFailure:()=>{setStatus(false,'Error de conexión');setTimeout(connectMQTT,5000);}
+  });
+}
+
+function doLogin(){
+  const id=document.getElementById('inId').value.toUpperCase().replace(/:/g,'');
+  const pass=document.getElementById('inPass').value;
+  const exp='mochi'+id.slice(-6);
+  if(id.length!==12||pass!==exp){
+    document.getElementById('errMsg').style.display='block'; return;
+  }
+  devId=id;
+  localStorage.setItem('dm_id',id);
+  localStorage.setItem('dm_pass',pass);
+  startDash();
+}
+
+function doLogout(){
+  localStorage.removeItem('dm_id');localStorage.removeItem('dm_pass');
+  if(mqtt)mqtt.disconnect();
+  document.getElementById('dash').style.display='none';
+  document.getElementById('loginWrap').style.display='block';
   setStatus(false);
 }
 
-// ── Dashboard ────────────────────────────────────────────────
-function startDashboard() {
-  document.getElementById('loginWrap').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  document.getElementById('deviceIdLabel').textContent = 'ID: ' + deviceId;
+function startDash(){
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('dash').style.display='block';
+  document.getElementById('devIdLabel').textContent='ID: '+devId;
   buildAnimGrid();
-  buildTZSelect('');
+  buildTZ();
+  updatePreview();
   connectMQTT();
 }
 
-function buildAnimGrid() {
-  const grid = document.getElementById('animGrid');
-  grid.innerHTML = '';
-  HOURS.forEach((h, i) => {
-    const row = document.createElement('div');
-    row.className = 'anim-row';
-    row.innerHTML = `<label>${h}</label>
-      <select onchange="state.hourAnims[${i}]=parseInt(this.value)" id="anim${i}">
-        ${ANIMS.map((a,j)=>`<option value="${j}">${a}</option>`).join('')}
-      </select>`;
-    grid.appendChild(row);
-  });
+function markChanged(){
+  const btn=document.querySelector('.btn-save');
+  if(btn) btn.textContent='💾 Guardar cambios ●';
 }
 
-function buildTZSelect(q) {
-  const sel = document.getElementById('tzSelect');
-  const filt = TZ_DATA.filter(t => !q || t.name.toLowerCase().includes(q.toLowerCase()));
-  sel.innerHTML = filt.map(t => {
-    const sign = t.offset >= 0 ? '+' : '−';
-    const abs = Math.abs(t.offset);
-    const h = Math.floor(abs);
-    const m = (abs%1)*60;
-    const fmt = `GMT${sign}${h}${m?':'+m.toString().padStart(2,'0'):''}`;
-    return `<option value="${t.offset}" ${t.offset===state.tz?'selected':''}>${t.name} (${fmt})</option>`;
-  }).join('');
-}
-
-function filterTZ(q) { buildTZSelect(q); }
-
-function toggleSwitch(el, key) {
-  el.classList.toggle('on');
-  state[key] = el.classList.contains('on');
-}
-
-function toggleDay(btn) {
-  btn.classList.toggle('active');
-  const bit = parseInt(btn.dataset.bit);
-  if (btn.classList.contains('active')) state.alarmDays |= (1<<bit);
-  else state.alarmDays &= ~(1<<bit);
-}
-
-function applyStateToUI() {
-  // Toggle 24h
-  const t24 = document.getElementById('toggle24h');
-  if (state.use24h) t24.classList.add('on'); else t24.classList.remove('on');
-  // Toggle alarm
-  const ta = document.getElementById('toggleAlarm');
-  if (state.alarmEn) ta.classList.add('on'); else ta.classList.remove('on');
-  // Alarm time
-  document.getElementById('alarmH').value = state.alarmH;
-  document.getElementById('alarmM').value = state.alarmM;
-  // Days
-  document.querySelectorAll('.day-btn').forEach(btn => {
-    const bit = parseInt(btn.dataset.bit);
-    if (state.alarmDays & (1<<bit)) btn.classList.add('active');
-    else btn.classList.remove('active');
-  });
-  // Anim selects
-  state.hourAnims.forEach((v,i) => {
-    const sel = document.getElementById('anim'+i);
-    if (sel) sel.value = v;
-  });
-  // TZ
-  buildTZSelect(document.getElementById('tzSearch').value);
-}
-
-// ── MQTT ─────────────────────────────────────────────────────
-function setStatus(online, text) {
-  const dot = document.getElementById('statusDot');
-  const txt = document.getElementById('statusText');
-  if (online) { dot.classList.add('online'); txt.textContent = text || 'Mochi conectado'; }
-  else { dot.classList.remove('online'); txt.textContent = text || 'Mochi desconectado'; }
-  connected = online;
-}
-
-function connectMQTT() {
-  const clientId = 'web-' + Math.random().toString(36).substr(2,8);
-  mqttClient = new Paho.MQTT.Client(MQTT_HOST, MQTT_WS_PORT, '/mqtt', clientId);
-
-  mqttClient.onConnectionLost = () => {
-    setStatus(false);
-    setTimeout(connectMQTT, 5000);
+function saveConfig(){
+  if(!mqtt||!mqtt.isConnected()){showToast('Sin conexión al broker','warn');return;}
+  const p={
+    tz:st.tz, use24h:st.use24h, alarmEn:st.alarmEn,
+    alarmH:+document.getElementById('aH').value,
+    alarmM:+document.getElementById('aM').value,
+    alarmDays:st.alarmDays,
+    hourAnims:st.hourAnims.join(',')
   };
-
-  mqttClient.onMessageArrived = (msg) => {
-    if (msg.destinationName === 'dasai/'+deviceId+'/status') {
-      try {
-        const data = JSON.parse(msg.payloadString);
-        if (data.use24h  !== undefined) state.use24h  = data.use24h;
-        if (data.alarmEn !== undefined) state.alarmEn = data.alarmEn;
-        if (data.alarmH  !== undefined) state.alarmH  = data.alarmH;
-        if (data.alarmM  !== undefined) state.alarmM  = data.alarmM;
-        if (data.alarmDays !== undefined) state.alarmDays = data.alarmDays;
-        if (data.tz      !== undefined) state.tz      = data.tz;
-        if (data.hour    !== undefined && data.min !== undefined) {
-          const h = data.hour, m = data.min;
-          const disp = state.use24h
-            ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
-            : `${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
-          document.getElementById('deviceTime').textContent = disp;
-        }
-        applyStateToUI();
-        setStatus(true, 'Mochi en línea');
-      } catch(e) {}
-    }
-  };
-
-  mqttClient.connect({
-    useSSL: true,
-    userName: MQTT_USER,
-    password: MQTT_PASS,
-    onSuccess: () => {
-      setStatus(false, 'Buscando Mochi...');
-      mqttClient.subscribe('dasai/'+deviceId+'/status');
-    },
-    onFailure: () => {
-      setStatus(false, 'Error de conexión');
-      setTimeout(connectMQTT, 5000);
-    }
-  });
+  const msg=new Paho.MQTT.Message(JSON.stringify(p));
+  msg.destinationName='dasai/'+devId+'/config';
+  msg.retained=true;
+  mqtt.send(msg);
+  document.querySelector('.btn-save').textContent='💾 Guardar cambios';
+  showToast('✓ Cambios guardados');
 }
 
-function saveConfig() {
-  if (!mqttClient || !mqttClient.isConnected()) {
-    showToast('⚠️ Sin conexión al broker', '#f59e0b');
-    return;
-  }
-  const payload = {
-    tz:       state.tz,
-    use24h:   state.use24h,
-    alarmEn:  state.alarmEn,
-    alarmH:   parseInt(document.getElementById('alarmH').value),
-    alarmM:   parseInt(document.getElementById('alarmM').value),
-    alarmDays:state.alarmDays,
-    hourAnims:state.hourAnims.join(',')
-  };
-  const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-  msg.destinationName = 'dasai/'+deviceId+'/config';
-  msg.retained = true;
-  mqttClient.send(msg);
-  showToast('✓ Cambios enviados al Mochi');
+function showToast(txt,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=txt;
+  t.className='toast'+(type?' '+type:'')+' show';
+  setTimeout(()=>t.classList.remove('show'),3000);
 }
 
-function showToast(txt, color) {
-  const t = document.getElementById('toast');
-  t.textContent = txt;
-  t.style.background = color || 'var(--green)';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// ── Auto-login ───────────────────────────────────────────────
-window.onload = () => {
-  const id = localStorage.getItem('dm_id');
-  const pass = localStorage.getItem('dm_pass');
-  if (id && pass) {
-    document.getElementById('inputDeviceId').value = id;
-    document.getElementById('inputPass').value = pass;
-    deviceId = id; devicePass = pass;
-    startDashboard();
+window.onload=()=>{
+  const id=localStorage.getItem('dm_id'),pass=localStorage.getItem('dm_pass');
+  if(id&&pass){
+    document.getElementById('inId').value=id;
+    document.getElementById('inPass').value=pass;
+    devId=id; startDash();
   }
 };
 </script>
