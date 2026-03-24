@@ -657,7 +657,7 @@ function connectMQTT(){
         if(d.alarmH!==undefined)st.alarmH=d.alarmH;
         if(d.alarmM!==undefined)st.alarmM=d.alarmM;
         if(d.alarmDays!==undefined)st.alarmDays=d.alarmDays;
-        if(d.tz!==undefined)st.tz=d.tz;
+        if(d.tz!==undefined){st.tz=d.tz; buildTZ();}
         if(d.hour!==undefined&&d.min!==undefined){
           const h=d.hour,m=d.min;
           document.getElementById('devTime').textContent=
