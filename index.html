@@ -675,6 +675,12 @@ function connectMQTT(){
       setStatus(false,'Buscando Mochi...');
       mqtt.subscribe('dasai/'+devId+'/status');
       mqtt.subscribe('dasai/'+devId+'/online');
+      // Pedir status actual al Mochi
+      setTimeout(()=>{
+        const ping = new Paho.MQTT.Message('ping');
+        ping.destinationName = 'dasai/'+devId+'/ping';
+        if(mqtt.isConnected()) mqtt.send(ping);
+      }, 1000);
     },
     onFailure:()=>{setStatus(false,'Error de conexión');setTimeout(connectMQTT,5000);}
   });
