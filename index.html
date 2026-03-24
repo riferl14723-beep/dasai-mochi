@@ -760,7 +760,7 @@ function saveConfig(){
   };
   const msg=new Paho.MQTT.Message(JSON.stringify(p));
   msg.destinationName='dasai/'+devId+'/config';
-  msg.retained=true;
+  msg.retained=false;  // NO retained — evita sobreescribir config local al reiniciar
   mqtt.send(msg);
   document.querySelector('.btn-save').textContent='💾 Guardar cambios';
   showToast('✓ Cambios guardados');
