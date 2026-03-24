@@ -657,7 +657,7 @@ function connectMQTT(){
         if(d.alarmH!==undefined)st.alarmH=d.alarmH;
         if(d.alarmM!==undefined)st.alarmM=d.alarmM;
         if(d.alarmDays!==undefined)st.alarmDays=d.alarmDays;
-        if(d.tz!==undefined){st.tz=d.tz; buildTZ();}
+        if(d.tz!==undefined)st.tz=d.tz;
         if(d.hour!==undefined&&d.min!==undefined){
           const h=d.hour,m=d.min;
           document.getElementById('devTime').textContent=
@@ -675,12 +675,6 @@ function connectMQTT(){
       setStatus(false,'Buscando Mochi...');
       mqtt.subscribe('dasai/'+devId+'/status');
       mqtt.subscribe('dasai/'+devId+'/online');
-      // Pedir status actual al Mochi
-      setTimeout(()=>{
-        const ping = new Paho.MQTT.Message('ping');
-        ping.destinationName = 'dasai/'+devId+'/ping';
-        if(mqtt.isConnected()) mqtt.send(ping);
-      }, 1000);
     },
     onFailure:()=>{setStatus(false,'Error de conexión');setTimeout(connectMQTT,5000);}
   });
@@ -760,7 +754,7 @@ function saveConfig(){
   };
   const msg=new Paho.MQTT.Message(JSON.stringify(p));
   msg.destinationName='dasai/'+devId+'/config';
-  msg.retained=false;  // NO retained — evita sobreescribir config local al reiniciar
+  msg.retained=true;
   mqtt.send(msg);
   document.querySelector('.btn-save').textContent='💾 Guardar cambios';
   showToast('✓ Cambios guardados');
