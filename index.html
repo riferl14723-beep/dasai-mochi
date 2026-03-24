@@ -643,12 +643,6 @@ function connectMQTT(){
   mqtt=new Paho.MQTT.Client(MQTT_HOST,MQTT_PORT,'/mqtt',cid);
   mqtt.onConnectionLost=()=>{setStatus(false);setTimeout(connectMQTT,5000);};
   mqtt.onMessageArrived=(msg)=>{
-    // Tópico online — indica si el Mochi está encendido
-    if(msg.destinationName==='dasai/'+devId+'/online'){
-      const on = msg.payloadString === '1';
-      setStatus(on, on ? 'Mochi en línea ✓' : 'Mochi apagado');
-      return;
-    }
     if(msg.destinationName==='dasai/'+devId+'/status'){
       try{
         const d=JSON.parse(msg.payloadString);
@@ -665,7 +659,7 @@ function connectMQTT(){
             :`${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
         }
         applyUI();
-        // No cambiar status aquí — lo maneja /online
+        setStatus(true,'Mochi en línea ✓');
       }catch(e){}
     }
   };
@@ -674,7 +668,6 @@ function connectMQTT(){
     onSuccess:()=>{
       setStatus(false,'Buscando Mochi...');
       mqtt.subscribe('dasai/'+devId+'/status');
-      mqtt.subscribe('dasai/'+devId+'/online');
     },
     onFailure:()=>{setStatus(false,'Error de conexión');setTimeout(connectMQTT,5000);}
   });
@@ -749,8 +742,7 @@ function saveConfig(){
     alarmH:+document.getElementById('aH').value,
     alarmM:+document.getElementById('aM').value,
     alarmDays:st.alarmDays,
-    hourAnims:st.hourAnims.join(','),
-    ts: Date.now()
+    hourAnims:st.hourAnims.join(',')
   };
   const msg=new Paho.MQTT.Message(JSON.stringify(p));
   msg.destinationName='dasai/'+devId+'/config';
