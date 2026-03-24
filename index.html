@@ -643,6 +643,12 @@ function connectMQTT(){
   mqtt=new Paho.MQTT.Client(MQTT_HOST,MQTT_PORT,'/mqtt',cid);
   mqtt.onConnectionLost=()=>{setStatus(false);setTimeout(connectMQTT,5000);};
   mqtt.onMessageArrived=(msg)=>{
+    // Tópico online — indica si el Mochi está encendido
+    if(msg.destinationName==='dasai/'+devId+'/online'){
+      const on = msg.payloadString === '1';
+      setStatus(on, on ? 'Mochi en línea ✓' : 'Mochi apagado');
+      return;
+    }
     if(msg.destinationName==='dasai/'+devId+'/status'){
       try{
         const d=JSON.parse(msg.payloadString);
@@ -651,7 +657,7 @@ function connectMQTT(){
         if(d.alarmH!==undefined)st.alarmH=d.alarmH;
         if(d.alarmM!==undefined)st.alarmM=d.alarmM;
         if(d.alarmDays!==undefined)st.alarmDays=d.alarmDays;
-        if(d.tz!==undefined)st.tz=d.tz;
+        if(d.tz!==undefined){st.tz=d.tz; buildTZ();}
         if(d.hour!==undefined&&d.min!==undefined){
           const h=d.hour,m=d.min;
           document.getElementById('devTime').textContent=
@@ -659,7 +665,7 @@ function connectMQTT(){
             :`${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
         }
         applyUI();
-        setStatus(true,'Mochi en línea ✓');
+        // No cambiar status aquí — lo maneja /online
       }catch(e){}
     }
   };
@@ -668,6 +674,13 @@ function connectMQTT(){
     onSuccess:()=>{
       setStatus(false,'Buscando Mochi...');
       mqtt.subscribe('dasai/'+devId+'/status');
+      mqtt.subscribe('dasai/'+devId+'/online');
+      // Pedir status actual al Mochi
+      setTimeout(()=>{
+        const ping = new Paho.MQTT.Message('ping');
+        ping.destinationName = 'dasai/'+devId+'/ping';
+        if(mqtt.isConnected()) mqtt.send(ping);
+      }, 1000);
     },
     onFailure:()=>{setStatus(false,'Error de conexión');setTimeout(connectMQTT,5000);}
   });
@@ -742,11 +755,12 @@ function saveConfig(){
     alarmH:+document.getElementById('aH').value,
     alarmM:+document.getElementById('aM').value,
     alarmDays:st.alarmDays,
-    hourAnims:st.hourAnims.join(',')
+    hourAnims:st.hourAnims.join(','),
+    ts: Date.now()
   };
   const msg=new Paho.MQTT.Message(JSON.stringify(p));
   msg.destinationName='dasai/'+devId+'/config';
-  msg.retained=true;
+  msg.retained=false;  // NO retained — evita sobreescribir config local al reiniciar
   mqtt.send(msg);
   document.querySelector('.btn-save').textContent='💾 Guardar cambios';
   showToast('✓ Cambios guardados');
