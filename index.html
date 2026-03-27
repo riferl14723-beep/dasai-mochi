@@ -497,6 +497,16 @@ select {
       <div class="toggle" id="togAlarm" onclick="togSwitch(this,'alarmEn');markChanged()"></div>
     </div>
     <div class="card-row">
+      <div>
+        <div class="row-label">Sonido de alarma</div>
+        <div class="row-sub">Elige el tono que sonará</div>
+      </div>
+      <select id="alarmSndSel" onchange="st.alarmSnd=+this.value;markChanged()">
+        <option value="0">🎵 Sintetizado</option>
+        <option value="1">🎶 Personalizado</option>
+      </select>
+    </div>
+    <div class="card-row">
       <div class="row-label">Hora</div>
       <div class="time-picker">
         <input type="number" id="aH" min="0" max="23" value="7" onchange="st.alarmH=+this.value;markChanged()">
@@ -618,7 +628,7 @@ const TZ = [
   {n:'Nueva Zelanda',o:13},
 ];
 
-let st = {tz:-5,tzName:'Colombia / Ecuador / Perú',use24h:false,alarmEn:false,alarmH:7,alarmM:0,alarmDays:0b0111110,hourAnims:[2,6,0,3,0,6,1]};
+let st = {tz:-5,tzName:'Colombia / Ecuador / Perú',use24h:false,alarmEn:false,alarmH:7,alarmM:0,alarmDays:0b0111110,hourAnims:[2,6,0,3,0,6,1],alarmSnd:0};
 let mqtt=null, devId='', connected=false;
 
 function fmtOff(o) {
@@ -704,6 +714,8 @@ function applyUI() {
       if(s) s.value=st.hourAnims[i];
     });
   }
+  const sndSel=document.getElementById('alarmSndSel');
+  if(sndSel) sndSel.value=st.alarmSnd||0;
   buildTZ();
   updateAllTimes();
 }
@@ -744,6 +756,7 @@ function connectMQTT(){
             : d.hourAnims;
           if(arr.length===7) st.hourAnims=arr;
         }
+        if(d.alarmSnd!==undefined) st.alarmSnd=d.alarmSnd;
         buildTZ();
         if(d.hour!==undefined&&d.min!==undefined){
           const h=d.hour,m=d.min;
@@ -858,6 +871,7 @@ function saveConfig(){
     alarmM:+document.getElementById('aM').value,
     alarmDays:st.alarmDays,
     hourAnims:st.hourAnims.join(','),
+    alarmSnd:st.alarmSnd||0,
     ts: Date.now()
   };
   const msg=new Paho.MQTT.Message(JSON.stringify(p));
