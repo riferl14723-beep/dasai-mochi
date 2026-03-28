@@ -640,8 +640,9 @@ function buildTZ(q='') {
   const sel=document.getElementById('tzSel');
   const f=TZ.filter(t=>!q||t.n.toLowerCase().includes(q.toLowerCase()));
   sel.innerHTML=f.map(t=>{
-    const sel2 = t.n===st.tzName?'selected':'';
-    return `<option value="${t.n}|${t.o}" ${sel2}>${t.n} (${fmtOff(t.o)})</option>`;
+    // Marcar por offset numérico (más robusto que comparar strings)
+    const isSelected = Math.abs(t.o - st.tz) < 0.01;
+    return `<option value="${t.n}|${t.o}" ${isSelected?'selected':''}>${t.n} (${fmtOff(t.o)})</option>`;
   }).join('');
 }
 function filterTZ(q){buildTZ(q);}
