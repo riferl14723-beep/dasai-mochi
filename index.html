@@ -636,13 +636,42 @@ function fmtOff(o) {
   return `GMT${s}${h}${m?':'+String(m).padStart(2,'0'):''}`;
 }
 
+// Normalizar string: minúsculas + sin tildes
+function normStr(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+
+function tzMatches(webName, espName, offset) {
+  if(!espName || espName.length===0) return false;
+  const w = normStr(webName), e = normStr(espName);
+  // Coincidencia exacta
+  if(w === e) return true;
+  // El nombre del ESP está contenido en el de la web (ej: 'colombia' en 'colombia / ecuador / peru')
+  if(w.includes(e)) return true;
+  // El nombre de la web está contenido en el del ESP
+  if(e.includes(w)) return true;
+  // Primera palabra del ESP coincide con primera palabra de la web y mismo offset
+  const firstW = w.split(/[\s\/,]+/)[0];
+  const firstE = e.split(/[\s\/,()]+/)[0];
+  if(firstW === firstE && Math.abs(offset - st.tz) < 0.01) return true;
+  return false;
+}
+
 function buildTZ(q='') {
   const sel=document.getElementById('tzSel');
   const f=TZ.filter(t=>!q||t.n.toLowerCase().includes(q.toLowerCase()));
-  sel.innerHTML=f.map(t=>{
-    // Marcar por offset numérico (más robusto que comparar strings)
-    const isSelected = Math.abs(t.o - st.tz) < 0.01;
-    return `<option value="${t.n}|${t.o}" ${isSelected?'selected':''}>${t.n} (${fmtOff(t.o)})</option>`;
+  // Primero encontrar cuál debe estar seleccionado
+  let bestMatch = -1;
+  if(st.tzName && st.tzName.length>0) {
+    // Prioridad 1: coincidencia exacta
+    bestMatch = f.findIndex(t => normStr(t.n) === normStr(st.tzName));
+    // Prioridad 2: nombre del ESP contenido en nombre web
+    if(bestMatch<0) bestMatch = f.findIndex(t => tzMatches(t.n, st.tzName, t.o));
+  }
+  // Prioridad 3: solo por offset si no hay nombre
+  if(bestMatch<0 && st.tz !== undefined) {
+    bestMatch = f.findIndex(t => Math.abs(t.o - st.tz) < 0.01);
+  }
+  sel.innerHTML=f.map((t,i)=>{
+    return `<option value="${t.n}|${t.o}" ${i===bestMatch?'selected':''}>${t.n} (${fmtOff(t.o)})</option>`;
   }).join('');
 }
 function filterTZ(q){buildTZ(q);}
